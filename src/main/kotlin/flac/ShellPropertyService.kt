@@ -2,12 +2,11 @@ package flac
 
 import utils.Logger
 import utils.Sanitizer
+import windows.PowerShell
 
-class ShellPropertyService {
-    private val powerShell = PowerShell()
+class ShellPropertyService(private val powerShell: PowerShell = PowerShell()) {
 
     fun getPropertiesFromShell(filePath: String, logger: Logger): Map<String, String> {
-        val properties = mutableMapOf<String, String>()
 
         var filePath = buildShellCommand(filePath)
 
@@ -15,21 +14,21 @@ class ShellPropertyService {
 
         val output = powerShell.executeCommand(filePath, logger)
 
-        output.split("\r\n").forEach { line ->
-            val parts = line.split(":", limit = 2).map { it.trim() }
-            if (parts.size == 2) {
-                val (key, value) = parts
-                if (value.isNotBlank()) {
-                    properties[key] = value
-                }
-            } else {
-                logger.log("Invalid line format: $line")
-            }
+        if (output.contains("Title not found") || output.contains("Title property not found") || output.contains
+                ("Error accessing file properties")
+        ) {
+            return mapOf()
         }
-        properties.remove("PS C")
-        properties.forEach { logger.log("${it.key}: ${it.value}") }
 
-        return properties
+        val title = output.substringAfterLast("Title: ")
+
+        return if (title.isNotBlank()) {
+            mapOf(Pair("Title", title)).also {
+                logger.log(it.entries.toString())
+            }
+        } else {
+            mapOf()
+        }
     }
 
     fun buildShellCommand(filePath: String): String {
@@ -42,15 +41,27 @@ class ShellPropertyService {
                 "\$nomeArquivo = Split-Path \$arquivo -Leaf;" +
                 "\$folder = \$shell.Namespace(\$pasta);" +
                 "\$file = \$folder.ParseName(\$nomeArquivo);" +
-                "for (\$i = 0; \$i -lt 300; \$i++) {" +
+                "\$titleIndex = -1;" +
+                "for (\$i = 0; \$i -lt 300; \$i++) {" +  // Iterar até o limite de 300
                 "\$nomePropriedade = \$folder.GetDetailsOf(\$null, \$i);" +
-                "\$valorPropriedade = \$folder.GetDetailsOf(\$file, \$i);" +
-                "if (\$nomePropriedade -ne '' -and \$valorPropriedade -ne '') {" +
-                "Write-Output \"\$nomePropriedade`: \$valorPropriedade\";" +
+                "if (\$nomePropriedade -eq 'Title') {" +  // Verifica se a propriedade é "Title"
+                "\$titleIndex = \$i;" +
+                "break;" +  // Para o loop quando o índice do Title é encontrado
                 "}" +
+                "}" +
+                "if (\$titleIndex -ne -1) {" +  // Se o índice do título foi encontrado
+                "\$titleProperty = \$folder.GetDetailsOf(\$file, \$titleIndex);" +
+                "if (\$titleProperty -ne '') {" +
+                "Write-Output \"Title: \$titleProperty\";" +
+                "} else {" +
+                "Write-Output 'Title not found';" +
+                "}" +
+                "} else {" +
+                "Write-Output 'Title property not found';" +
                 "}" +
                 "} catch {" +
                 "Write-Host 'Error accessing file properties.'" +
                 "}"
     }
+
 }
