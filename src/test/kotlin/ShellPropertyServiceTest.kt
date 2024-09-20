@@ -3,11 +3,12 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import utils.Logger
 import java.io.File
+import java.util.Date
 
 class ShellPropertyServiceTest {
 
-    val shellPropertyService = ShellPropertyService()
-    val filePath: String = TODO()
+    private val shellPropertyService = ShellPropertyService()
+    private val filePath: String = TODO("replace to the path of some .flac file")
 
     @Test
     fun buildShellCommandTest() {
@@ -15,7 +16,7 @@ class ShellPropertyServiceTest {
             filePath
         )
 
-        println(result)
+        Logger(File("flac_buildShellCommand ${Date().hashCode()}.txt").absolutePath).log(result)
     }
 
     @Test
@@ -23,7 +24,7 @@ class ShellPropertyServiceTest {
         Assertions.assertDoesNotThrow {
             shellPropertyService.getPropertiesFromShell(
                 filePath, Logger(
-                    File("flac_processing_log_test.txt").absolutePath
+                    File("flac_processing_log_test ${Date().hashCode()}.txt").absolutePath
                 )
             )
         }
