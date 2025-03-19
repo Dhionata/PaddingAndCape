@@ -1,18 +1,20 @@
 package windows
 
-import utils.Logger
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.util.logging.Logger
 
 class PowerShell(
     private val processBuilder: ProcessBuilder = ProcessBuilder(
         "powershell.exe", "-NoProfile", "-nologo"
-    ).redirectErrorStream(true)
+    ).redirectErrorStream(true),
 ) {
 
-    fun executeCommand(command: String, logger: Logger): String {
+    private val logger = Logger.getLogger(this.javaClass.name)
+
+    fun executeCommand(command: String): String {
         val process = processBuilder.start()
 
         OutputStreamWriter(process.outputStream).use {
@@ -22,15 +24,13 @@ class PowerShell(
 
         val output = readStream(process.inputStream)
 
-        val errorOutput = readStream(process.errorStream)
-
-        if (errorOutput.isNotBlank()) {
-            logger.log("\nError executing PowerShell command: $errorOutput\n")
-        }
-
         process.waitFor()
 
-        return output.substringAfterLast("{Write-Host 'Error accessing file properties.'}").substringBefore("\r\n")
+        val outputFiltered = output.substringAfterLast("{Write-Host 'Error accessing file properties.'}").substringBefore("\r\n")
+
+        logger.info(outputFiltered)
+
+        return outputFiltered
     }
 
     private fun readStream(stream: InputStream): String {

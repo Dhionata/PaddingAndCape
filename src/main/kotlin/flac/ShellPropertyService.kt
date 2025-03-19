@@ -1,18 +1,20 @@
 package flac
 
-import utils.Logger
 import utils.Sanitizer
 import windows.PowerShell
+import java.util.logging.Logger
 
 class ShellPropertyService(private val powerShell: PowerShell = PowerShell()) {
 
-    fun getPropertiesFromShell(filePath: String, logger: Logger): Map<String, String> {
+    private val logger: Logger = Logger.getLogger(this.javaClass.name)
+
+    fun getPropertiesFromShell(filePath: String): Map<String, String> {
 
         var filePath = buildShellCommand(filePath)
 
-        logger.log(filePath)
+        logger.info(filePath)
 
-        val output = powerShell.executeCommand(filePath, logger)
+        val output = powerShell.executeCommand(filePath)
 
         if (output.contains("Title not found") || output.contains("Title property not found") || output.contains
                 ("Error accessing file properties")
@@ -24,7 +26,7 @@ class ShellPropertyService(private val powerShell: PowerShell = PowerShell()) {
 
         return if (title.isNotBlank()) {
             mapOf(Pair("Title", title)).also {
-                logger.log(it.entries.toString())
+                logger.info(it.entries.toString())
             }
         } else {
             mapOf()
@@ -63,5 +65,4 @@ class ShellPropertyService(private val powerShell: PowerShell = PowerShell()) {
                 "Write-Host 'Error accessing file properties.'" +
                 "}"
     }
-
 }

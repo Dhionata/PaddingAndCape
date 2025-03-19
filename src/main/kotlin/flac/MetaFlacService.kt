@@ -1,12 +1,13 @@
 package flac
 
-import utils.Logger
 import utils.Sanitizer
 import windows.PowerShell
 import java.io.IOException
+import java.util.logging.Logger
 
-class MetaFlacService(private val metaFlacPath: String, private val logger: Logger) {
-    private val powerShell = PowerShell()
+class MetaFlacService(private val metaFlacPath: String, private val powerShell: PowerShell = PowerShell()) {
+
+    private val logger: Logger = Logger.getLogger(this.javaClass.name)
 
     fun removePadding(fileAbsolutePath: String) {
         val fileAbsolutePath = Sanitizer.sanitizeFilePath(fileAbsolutePath)
@@ -21,12 +22,13 @@ class MetaFlacService(private val metaFlacPath: String, private val logger: Logg
 
     private fun executeCommand(command: String) {
         try {
-            val metaFlacCommand = "\"$metaFlacPath\" $command"
-            logger.log("metaFlacCommand: $metaFlacCommand")
+            val metaFlacCommand = "$metaFlacPath $command"
+            logger.info("metaFlacCommand: $metaFlacCommand")
 
-            powerShell.executeCommand(metaFlacCommand, logger)
+            val powershellReturn = powerShell.executeCommand(metaFlacCommand)
+            logger.info { powershellReturn }
         } catch (e: IOException) {
-            logger.log("Error when executing the metaFlac command: ${e.message}")
+            logger.warning("Error when executing the metaFlac command: ${e.message}")
             throw Exception(e)
         }
     }

@@ -2,33 +2,31 @@ import flac.FileProcessor
 import flac.MetaFlacService
 import flac.ShellPropertyService
 import utils.FileSelector
-import utils.Logger
 import java.io.File
-import java.util.Date
+import java.util.*
+import java.util.logging.Logger
 import javax.swing.JOptionPane
 
 fun main() {
     try {
-        val logger = Logger("flac_processing_log ${Date().hashCode()}.txt")
-
+        val logger = Logger.getGlobal()
         val fileSelector = FileSelector()
 
         val metaFlacFile = fileSelector.selectMetaFlacPath()
-        logger.log("Selected metaflac.exe file: ${metaFlacFile.absolutePath}")
+        logger.info("Selected metaflac.exe file: ${metaFlacFile.absolutePath}")
 
         val musicDirectory = fileSelector.selectMusicDirectory()
-        logger.log("Selected song directory: ${musicDirectory.absolutePath}")
+        logger.info("Selected song directory: ${musicDirectory.absolutePath}")
 
         val removedCoversFile = File(".", "removed_covers ${Date().hashCode()}.txt").absolutePath
 
-        val metaFlacService = MetaFlacService(metaFlacFile.absolutePath, logger)
+        val metaFlacService = MetaFlacService(metaFlacFile.absolutePath)
         val shellPropertyService = ShellPropertyService()
-        val fileProcessor = FileProcessor(
-            metaFlacService, shellPropertyService, musicDirectory.absolutePath, logger,
-            removedCoversFile
-        )
 
-        fileProcessor.processFlacFiles()
+        FileProcessor(
+            metaFlacService, shellPropertyService, musicDirectory.absolutePath,
+            removedCoversFile
+        ).processFlacFiles()
 
         JOptionPane.showMessageDialog(null, "Finished")
     } catch (e: Exception) {
